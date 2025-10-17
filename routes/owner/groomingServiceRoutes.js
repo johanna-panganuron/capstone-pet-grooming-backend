@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// READ (Get Service Statistics) - MOVE THIS BEFORE THE /:id ROUTE
+// READ (Get Service Statistics)
 router.get('/stats',
   authMiddleware.verifyToken,
   authMiddleware.verifyOwner,
@@ -38,7 +38,7 @@ router.get('/',
   groomingServiceController.getAllServices
 );
 
-// READ (Single) - MOVE THIS AFTER STATS ROUTE
+// READ (Single)
 router.get('/:id',
   authMiddleware.verifyToken,
   authMiddleware.verifyOwner,

@@ -189,7 +189,7 @@ router.get('/time-slots/:date',
       const { date } = req.params;
       const { exclude_appointment } = req.query;
 
-      console.log('🕐 Checking time slots for date:', date);
+      console.log('Checking time slots for date:', date);
 
       // Validate date format
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -248,7 +248,7 @@ router.get('/time-slots/:date',
       });
 
     } catch (error) {
-      console.error('❌ Error fetching time slots:', error);
+      console.error('Error fetching time slots:', error);
       next(error);
     }
   }
@@ -435,7 +435,7 @@ router.get('/:id/services',
         data: serviceSummary
       });
     } catch (error) {
-      console.error('❌ Error getting service summary:', error);
+      console.error('Error getting service summary:', error);
       res.status(500).json({
         success: false,
         message: 'Error getting service summary',

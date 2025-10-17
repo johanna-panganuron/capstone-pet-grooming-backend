@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointmentController');
 const authMiddleware = require('../middleware/authMiddleware');
-const Rating = require('../models/Rating'); // Add Rating model import
+const Rating = require('../models/Rating');
 const db = require('../models/db'); 
 const path = require('path');
 const fs = require('fs');
@@ -26,7 +26,7 @@ router.post('/',
   appointmentController.createAppointment
 );
 
-// GET ALL MY APPOINTMENTS (with payment status)
+// GET ALL MY APPOINTMENTS
 router.get('/',
   authMiddleware.verifyToken,
   verifyPetOwner,
@@ -191,7 +191,7 @@ router.post('/:id/rating',
       const ratingId = await Rating.create(ratingData);
       const createdRating = await Rating.findById(ratingId);
 
-      console.log('✅ Rating created successfully:', ratingId);
+      console.log('Rating created successfully:', ratingId);
 
       res.status(201).json({
         success: true,
@@ -203,7 +203,7 @@ router.post('/:id/rating',
       });
 
     } catch (error) {
-      console.error('❌ Error creating appointment rating:', error);
+      console.error('Error creating appointment rating:', error);
       
       let statusCode = 500;
       let message = 'Failed to submit rating';
@@ -225,7 +225,7 @@ router.post('/:id/rating',
   }
 );
 
-// ✅ NEW: GET RATING FOR APPOINTMENT
+// GET RATING FOR APPOINTMENT
 router.get('/:id/rating',
   authMiddleware.verifyToken,
   verifyPetOwner,
@@ -234,7 +234,7 @@ router.get('/:id/rating',
       const { id } = req.params;
       const userId = req.user.id;
 
-      console.log(`🔍 Getting rating for appointment ${id} by user ${userId}`);
+      console.log(`Getting rating for appointment ${id} by user ${userId}`);
 
       // Verify appointment belongs to this user
       const [appointmentRows] = await db.execute(
@@ -265,7 +265,7 @@ router.get('/:id/rating',
       });
 
     } catch (error) {
-      console.error('❌ Error getting appointment rating:', error);
+      console.error('Error getting appointment rating:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to get appointment rating',
@@ -275,7 +275,7 @@ router.get('/:id/rating',
   }
 );
 
-// ✅ NEW: UPDATE RATING FOR APPOINTMENT
+// UPDATE RATING FOR APPOINTMENT
 router.put('/:id/rating',
   authMiddleware.verifyToken,
   verifyPetOwner,
@@ -285,7 +285,7 @@ router.put('/:id/rating',
       const userId = req.user.id;
       const { rating, review, aspects } = req.body;
 
-      console.log(`📝 Updating rating for appointment ${id} by user ${userId}`);
+      console.log(`Updating rating for appointment ${id} by user ${userId}`);
 
       // Verify appointment belongs to this user
       const [appointmentRows] = await db.execute(
@@ -352,7 +352,7 @@ router.put('/:id/rating',
       });
 
     } catch (error) {
-      console.error('❌ Error updating appointment rating:', error);
+      console.error('Error updating appointment rating:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to update rating',
@@ -362,7 +362,7 @@ router.put('/:id/rating',
   }
 );
 
-// ✅ NEW: DELETE RATING FOR APPOINTMENT
+// DELETE RATING FOR APPOINTMENT
 router.delete('/:id/rating',
   authMiddleware.verifyToken,
   verifyPetOwner,
@@ -371,7 +371,7 @@ router.delete('/:id/rating',
       const { id } = req.params;
       const userId = req.user.id;
 
-      console.log(`🗑️ Deleting rating for appointment ${id} by user ${userId}`);
+      console.log(`Deleting rating for appointment ${id} by user ${userId}`);
 
       // Verify appointment belongs to this user
       const [appointmentRows] = await db.execute(
@@ -410,7 +410,7 @@ router.delete('/:id/rating',
       });
 
     } catch (error) {
-      console.error('❌ Error deleting appointment rating:', error);
+      console.error('Error deleting appointment rating:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to delete rating',
@@ -424,18 +424,15 @@ router.get('/images/:filename',
   async (req, res) => {
     try {
       const { filename } = req.params;
-      
-      // Determine the correct uploads path based on your project structure
-      // Adjust this path according to where your uploads folder is located
       const uploadsPath = path.join(process.cwd(), 'uploads', 'appointments');
       const imagePath = path.join(uploadsPath, filename);
       
-      console.log('📸 Looking for image at:', imagePath);
+      console.log('Looking for image at:', imagePath);
 
       // Check if file exists
       if (!fs.existsSync(imagePath)) {
-        console.log('❌ Image not found at:', imagePath);
-        console.log('📁 Directory contents:', fs.readdirSync(uploadsPath).slice(0, 10)); // Show first 10 files
+        console.log('Image not found at:', imagePath);
+        console.log('Directory contents:', fs.readdirSync(uploadsPath).slice(0, 10)); // Show first 10 files
         
         return res.status(404).json({
           success: false,
@@ -463,12 +460,12 @@ router.get('/images/:filename',
       res.setHeader('Content-Type', contentTypeMap[ext] || 'image/jpeg');
       res.setHeader('Cache-Control', 'public, max-age=3600');
       
-      console.log('✅ Serving image:', imagePath);
+      console.log('Serving image:', imagePath);
       // Send file using absolute path
       res.sendFile(path.resolve(imagePath));
 
     } catch (error) {
-      console.error('❌ Error serving image:', error);
+      console.error('Error serving image:', error);
       res.status(500).json({
         success: false,
         message: 'Error serving image',

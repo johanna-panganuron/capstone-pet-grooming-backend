@@ -1,3 +1,4 @@
+// routes\staff\appointmentRoutes.js
 const express = require('express');
 const router = express.Router();
 const staffAppointmentController = require('../../controllers/staff/appointmentController');

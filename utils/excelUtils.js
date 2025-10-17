@@ -3,9 +3,7 @@ const ExcelJS = require('exceljs');
 
 class ExcelUtils {
   
-  /**
-   * Apply standard styling to worksheet headers
-   */
+  // Apply standard styling to worksheet headers
   static styleHeaders(worksheet, headerRow = 1) {
     const row = worksheet.getRow(headerRow);
     

@@ -1,4 +1,4 @@
-// routes/paymentRoutes.js - Enhanced with mock testing endpoints
+// routes/paymentRoutes.js
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
@@ -56,7 +56,7 @@ router.post('/gcash/verify/:paymentId',
   paymentController.checkPaymentStatus
 );
 
-// 🎭 MOCK TESTING ENDPOINTS (for development/testing only)
+// MOCK TESTING ENDPOINTS (for development/testing only)
 // These should be removed or protected in production
 
 // Manual complete payment (useful for testing the success flow)

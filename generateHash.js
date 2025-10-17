@@ -1,9 +1,9 @@
 // generateHash.js
 const bcrypt = require('bcryptjs');
 
-const plainPassword = 'mimispetgroomingcapstone'; // <--- CHOOSE A STRONG PASSWORD HERE
+const plainPassword = 'mimispetgroomingcapstone';
 
-bcrypt.hash(plainPassword, 10) // 10 is the salt rounds, generally good
+bcrypt.hash(plainPassword, 10)
     .then(hash => {
         console.log('Hashed Password:', hash);
     })

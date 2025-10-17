@@ -197,7 +197,7 @@ class StaffWalkInController {
         data: groomers
       });
     } catch (error) {
-      console.error('❌ Error getting groomers:', error);
+      console.error('Error getting groomers:', error);
       res.status(500).json({ 
         success: false,
         message: 'Failed to get groomers',
@@ -266,7 +266,7 @@ class StaffWalkInController {
           ['pending', 'confirmed', 'in_progress'].includes(appointment.status)
         );
         
-        console.log(`❌ Pet ${pet_id} already has an active ${activeAppointment.booking_type} appointment today`);
+        console.log(`Pet ${pet_id} already has an active ${activeAppointment.booking_type} appointment today`);
         
         return res.status(409).json({
           success: false,
@@ -312,7 +312,7 @@ class StaffWalkInController {
       };
 
       const bookingId = await WalkInBooking.createWalkInBookingWithServices(bookingData);
-      console.log(`✅ Walk-in booking created with ID: ${bookingId}`);
+      console.log(`Walk-in booking created with ID: ${bookingId}`);
       
       // Get the complete booking details
       const booking = await WalkInBooking.getWalkInBookingByIdWithServices(bookingId);
@@ -321,10 +321,10 @@ class StaffWalkInController {
       if (req.user && booking) {
         await ActivityLogger.log(
           req.user,
-          'created',
-          'walk_in_booking',
-          `Booking #${bookingId} - Queue #${queue_number}`,
-          `Pet: ${booking.pet_name}, Total: ₱${total_amount}, Services: ${service_ids.length}`,
+          'walk_in_create',
+          'walk_in',
+          `Queue #${queue_number} - ${booking.pet_name}`,
+          `Created walk-in for ${booking.owner_name}'s ${booking.pet_name} - ${booking.services?.map(s => s.name).join(', ')}. Amount: ₱${total_amount}`,
           req
         );
       }
@@ -360,9 +360,9 @@ class StaffWalkInController {
             }
           });
 
-          console.log('📨 Walk-in booking creation notification sent to user:', booking.owner_id);
+          console.log('Walk-in booking creation notification sent to user:', booking.owner_id);
         } catch (notificationError) {
-          console.error('❌ Error sending walk-in booking creation notification:', notificationError);
+          console.error('Error sending walk-in booking creation notification:', notificationError);
         }
       }
 
@@ -376,7 +376,7 @@ class StaffWalkInController {
         }
       });
     } catch (error) {
-      console.error('❌ Error creating walk-in booking:', error);
+      console.error('Error creating walk-in booking:', error);
       res.status(500).json({ 
         success: false,
         message: 'Failed to create walk-in booking',
@@ -485,8 +485,8 @@ class StaffWalkInController {
       if (req.user) {
         await ActivityLogger.log(
           req.user,
-          'rescheduled',
-          'walk_in_booking',
+          'walk_in_update', // ✅ CHANGED from 'rescheduled'
+          'walk_in',
           `Booking #${bookingId}`,
           `Time slot changed to ${new_time_slot}. Reason: ${reschedule_reason.trim()}`,
           req
@@ -639,14 +639,34 @@ class StaffWalkInController {
 
       // Log activity for status update
       if (req.user) {
-        await ActivityLogger.log(
-          req.user,
-          'updated',
-          'walk_in_booking_status',
-          `Booking #${bookingId}`,
-          `Status changed to ${status}`,
-          req
-        );
+        if (status === 'completed') {
+          await ActivityLogger.log(
+            req.user,
+            'walk_in_complete', // specific action
+            'walk_in',
+            `Booking #${bookingId}`,
+            `Marked as completed`,
+            req
+          );
+        } else if (status === 'cancelled') {
+          await ActivityLogger.log(
+            req.user,
+            'walk_in_cancel', // specific action
+            'walk_in',
+            `Booking #${bookingId}`,
+            `Cancelled booking`,
+            req
+          );
+        } else {
+          // For all other status updates
+          await ActivityLogger.log(
+            req.user,
+            'updated',
+            'walk_in_booking_status',
+            `Booking #${bookingId}`,
+            `Status changed to ${status}`,
+            req
+          );}
       }
       
       res.json({
@@ -655,7 +675,7 @@ class StaffWalkInController {
         data: { booking_id: bookingId, new_status: status }
       });
     } catch (error) {
-      console.error('❌ Error updating booking status:', error);
+      console.error('Error updating booking status:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to update booking status',
@@ -1237,8 +1257,8 @@ class StaffWalkInController {
       if (req.user) {
         await ActivityLogger.log(
           req.user,
-          'cancelled',
-          'walk_in_booking',
+          'walk_in_cancel', // ✅ CHANGED from 'cancelled'
+          'walk_in',
           `Booking #${bookingId}`,
           `Cancelled by ${cancelled_by}. Reason: ${cancellation_reason.trim()}. Refund eligible: ${refund_eligible}`,
           req

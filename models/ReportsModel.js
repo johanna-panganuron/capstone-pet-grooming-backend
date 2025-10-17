@@ -582,65 +582,196 @@ class ReportsModel {
   }
   
   /**
-   * Get staff performance data
-   */
-  async getStaffPerformance(dateFilters) {
-    try {
-      const { startDate, endDate } = dateFilters;
-      
-      const query = `
+ * Get staff performance data - FIXED for both Groomers and Receptionists
+ */
+ // In ReportsModel.js - Replace the getStaffPerformance method
+
+async getStaffPerformance(dateFilters) {
+  try {
+    const { startDate, endDate } = dateFilters;
+    
+    const query = `
+      SELECT 
+        u.id,
+        u.name,
+        u.staff_type as role,
+        
+        -- Services completed (only for groomers)
+        CASE 
+          WHEN u.staff_type = 'Groomer' THEN 
+            COALESCE(
+              (SELECT COUNT(*) FROM appointments WHERE groomer_id = u.id 
+               AND status = 'completed' 
+               AND DATE(COALESCE(actual_date, preferred_date)) BETWEEN ? AND ?), 0
+            ) +
+            COALESCE(
+              (SELECT COUNT(*) FROM walk_in_bookings WHERE groomer_id = u.id 
+               AND status = 'completed' 
+               AND DATE(created_at) BETWEEN ? AND ?), 0
+            )
+          ELSE 0
+        END as servicesCompleted,
+        
+        -- Revenue generated
+        CASE 
+          WHEN u.staff_type = 'Groomer' THEN
+            COALESCE(
+              (SELECT SUM(a.total_amount)
+               FROM appointments a
+               WHERE a.groomer_id = u.id
+               AND a.status = 'completed'
+               AND a.payment_status = 'paid'
+               AND DATE(COALESCE(a.actual_date, a.preferred_date)) BETWEEN ? AND ?), 0
+            ) +
+            COALESCE(
+              (SELECT SUM(wb.total_amount)
+               FROM walk_in_bookings wb
+               WHERE wb.groomer_id = u.id
+               AND wb.status = 'completed'
+               AND wb.payment_status = 'paid'
+               AND DATE(wb.created_at) BETWEEN ? AND ?), 0
+            )
+          WHEN u.staff_type = 'Receptionist' THEN
+            -- Revenue from walk-ins created by this receptionist
+            COALESCE(
+              (SELECT SUM(wb.total_amount)
+               FROM walk_in_bookings wb
+               INNER JOIN activity_logs al ON al.target_name LIKE CONCAT('Booking #', wb.id, '%')
+               WHERE al.user_id = u.id
+               AND al.action = 'created'
+               AND al.target_type = 'walk_in_booking'
+               AND wb.status = 'completed'
+               AND wb.payment_status = 'paid'
+               AND DATE(wb.created_at) BETWEEN ? AND ?), 0
+            ) +
+            -- Revenue from appointments created by this receptionist (if they create any)
+            COALESCE(
+              (SELECT SUM(a.total_amount)
+               FROM appointments a
+               INNER JOIN activity_logs al ON (
+                 al.target_name LIKE CONCAT('%', (SELECT name FROM pets WHERE id = a.pet_id), '%')
+                 AND al.target_name LIKE CONCAT('%', (SELECT name FROM users WHERE id = a.owner_id), '%')
+               )
+               WHERE al.user_id = u.id
+               AND al.action IN ('created', 'UPDATED')
+               AND al.target_type = 'APPOINTMENT'
+               AND a.status = 'completed'
+               AND a.payment_status = 'paid'
+               AND DATE(a.created_at) = DATE(al.created_at)
+               AND DATE(COALESCE(a.actual_date, a.preferred_date)) BETWEEN ? AND ?), 0
+            )
+          ELSE 0
+        END as revenueGenerated,
+        
+        COALESCE(AVG(staff_work.rating), 0) as averageRating,
+        
+        -- Efficiency
+        CASE 
+          WHEN u.staff_type = 'Groomer' THEN
+            (COUNT(CASE WHEN staff_work.status = 'completed' THEN 1 END) * 100.0 / 
+             NULLIF(COUNT(staff_work.id), 0))
+          WHEN u.staff_type = 'Receptionist' THEN
+            -- Efficiency based on walk-in bookings created
+            ((SELECT COUNT(*) FROM walk_in_bookings wb
+              INNER JOIN activity_logs al ON al.target_name LIKE CONCAT('Booking #', wb.id, '%')
+              WHERE al.user_id = u.id
+              AND al.action = 'created'
+              AND al.target_type = 'walk_in_booking'
+              AND wb.status = 'completed' 
+              AND DATE(wb.created_at) BETWEEN ? AND ?) +
+             (SELECT COUNT(*) FROM appointments a
+              INNER JOIN activity_logs al ON (
+                al.target_name LIKE CONCAT('%', (SELECT name FROM pets WHERE id = a.pet_id), '%')
+                AND al.target_name LIKE CONCAT('%', (SELECT name FROM users WHERE id = a.owner_id), '%')
+              )
+              WHERE al.user_id = u.id
+              AND al.action IN ('created', 'UPDATED')
+              AND al.target_type = 'APPOINTMENT'
+              AND a.status = 'completed'
+              AND DATE(a.created_at) = DATE(al.created_at)
+              AND DATE(COALESCE(a.actual_date, a.preferred_date)) BETWEEN ? AND ?)) * 100.0 /
+            NULLIF((SELECT COUNT(*) FROM walk_in_bookings wb
+              INNER JOIN activity_logs al ON al.target_name LIKE CONCAT('Booking #', wb.id, '%')
+              WHERE al.user_id = u.id
+              AND al.action = 'created'
+              AND al.target_type = 'walk_in_booking'
+              AND DATE(wb.created_at) BETWEEN ? AND ?) +
+             (SELECT COUNT(*) FROM appointments a
+              INNER JOIN activity_logs al ON (
+                al.target_name LIKE CONCAT('%', (SELECT name FROM pets WHERE id = a.pet_id), '%')
+                AND al.target_name LIKE CONCAT('%', (SELECT name FROM users WHERE id = a.owner_id), '%')
+              )
+              WHERE al.user_id = u.id
+              AND al.action IN ('created', 'UPDATED')
+              AND al.target_type = 'APPOINTMENT'
+              AND DATE(a.created_at) = DATE(al.created_at)
+              AND DATE(COALESCE(a.actual_date, a.preferred_date)) BETWEEN ? AND ?), 0)
+          ELSE 0
+        END as efficiency
+        
+      FROM users u
+      LEFT JOIN (
         SELECT 
-          u.id,
-          u.name,
-          u.staff_type as role,
-          COUNT(staff_work.id) as servicesCompleted,
-          COALESCE(SUM(staff_work.amount), 0) as revenueGenerated,
-          COALESCE(AVG(staff_work.rating), 0) as averageRating,
-          
-          -- Calculate efficiency based on completed vs total assigned services
-          (COUNT(CASE WHEN staff_work.status = 'completed' THEN 1 END) * 100.0 / 
-           NULLIF(COUNT(staff_work.id), 0)) as efficiency
-          
-        FROM users u
-        LEFT JOIN (
-          SELECT a.groomer_id, a.id, a.total_amount as amount, a.status, r.rating
-          FROM appointments a
-          LEFT JOIN ratings r ON a.id = r.appointment_id
-          WHERE DATE(COALESCE(a.actual_date, a.preferred_date)) BETWEEN ? AND ?
-          
-          UNION ALL
-          
-          SELECT wb.groomer_id, wb.id, wb.total_amount as amount, wb.status, wr.rating
-          FROM walk_in_bookings wb
-          LEFT JOIN walk_in_ratings wr ON wb.id = wr.walk_in_booking_id
-          WHERE DATE(wb.created_at) BETWEEN ? AND ?
-        ) staff_work ON u.id = staff_work.groomer_id
+          a.groomer_id as staff_id, 
+          a.id, 
+          a.status,
+          r.rating
+        FROM appointments a
+        LEFT JOIN ratings r ON a.id = r.appointment_id
+        WHERE DATE(COALESCE(a.actual_date, a.preferred_date)) BETWEEN ? AND ?
         
-        WHERE u.role = 'staff'
-          AND u.status = 'Active'
-          AND (u.staff_type = 'Groomer' OR u.staff_type = 'Receptionist')
+        UNION ALL
         
-        GROUP BY u.id, u.name, u.staff_type
-        ORDER BY revenueGenerated DESC
-      `;
+        SELECT 
+          wb.groomer_id as staff_id, 
+          wb.id, 
+          wb.status,
+          wr.rating
+        FROM walk_in_bookings wb
+        LEFT JOIN walk_in_ratings wr ON wb.id = wr.walk_in_booking_id
+        WHERE DATE(wb.created_at) BETWEEN ? AND ?
+      ) staff_work ON u.id = staff_work.staff_id
       
-      const [results] = await db.query(query, [startDate, endDate, startDate, endDate]);
+      WHERE u.role = 'staff'
+        AND u.status = 'Active'
       
-      return results.map(row => ({
-        id: row.id,
-        name: row.name,
-        role: row.role || 'Staff',
-        servicesCompleted: parseInt(row.servicesCompleted || 0),
-        revenueGenerated: parseFloat(row.revenueGenerated || 0),
-        averageRating: parseFloat(row.averageRating || 0).toFixed(1),
-        efficiency: parseFloat(row.efficiency || 0).toFixed(1)
-      }));
-      
-    } catch (error) {
-      console.error('Error in getStaffPerformance:', error);
-      throw error;
-    }
+      GROUP BY u.id, u.name, u.staff_type
+      ORDER BY revenueGenerated DESC
+    `;
+    
+    const params = [
+      startDate, endDate,  // Groomer appointments count
+      startDate, endDate,  // Groomer walk-ins count
+      startDate, endDate,  // Groomer appointments revenue
+      startDate, endDate,  // Groomer walk-ins revenue
+      startDate, endDate,  // Receptionist walk-ins revenue
+      startDate, endDate,  // Receptionist appointments revenue
+      startDate, endDate,  // Receptionist completed walk-ins efficiency
+      startDate, endDate,  // Receptionist completed appointments efficiency
+      startDate, endDate,  // Receptionist total walk-ins efficiency
+      startDate, endDate,  // Receptionist total appointments efficiency
+      startDate, endDate,  // Staff work appointments join
+      startDate, endDate   // Staff work walk-ins join
+    ];
+    
+    const [results] = await db.query(query, params);
+    
+    return results.map(row => ({
+      id: row.id,
+      name: row.name,
+      role: row.role || 'Staff',
+      servicesCompleted: parseInt(row.servicesCompleted || 0),
+      revenueGenerated: parseFloat(row.revenueGenerated || 0),
+      averageRating: parseFloat(row.averageRating || 0).toFixed(1),
+      efficiency: parseFloat(row.efficiency || 0).toFixed(1)
+    }));
+    
+  } catch (error) {
+    console.error('Error in getStaffPerformance:', error);
+    throw error;
   }
+}
+
 }
 
 module.exports = new ReportsModel();

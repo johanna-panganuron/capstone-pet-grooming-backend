@@ -10,30 +10,29 @@ exports.verifyToken = (req, res, next) => {
   console.log('Extracted token:', token ? 'Token present' : 'No token');
   
   if (!token) {
-    console.log('❌ No token provided');
+    console.log('No token provided');
     return res.status(401).json({ message: 'No token provided' });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('✅ Token decoded successfully:', JSON.stringify(decoded, null, 2));
+    console.log('Token decoded successfully:', JSON.stringify(decoded, null, 2));
     
     if (!decoded.id) {
-      console.error('❌ CRITICAL: Token does not contain user ID!');
+      console.error('CRITICAL: Token does not contain user ID!');
       console.log('Token payload:', decoded);
       return res.status(401).json({ message: 'Invalid token structure - missing user ID' });
     }
-    
-    // ✅ Ensure req.user has all necessary fields
+
     req.user = {
       id: decoded.id,
       email: decoded.email,
       role: decoded.role,
       name: decoded.name,
-      ...decoded // Include any other fields from token
+      ...decoded 
     };
     
-    console.log('✅ req.user set to:', {
+    console.log('req.user set to:', {
       id: req.user.id,
       email: req.user.email,
       role: req.user.role,
@@ -58,12 +57,12 @@ exports.authorize = (roles) => {
     const allowedRoles = Array.isArray(roles) ? roles : [roles];
     
     if (!req.user) {
-      console.log('❌ No user in request');
+      console.log('No user in request');
       return res.status(401).json({ message: 'Authentication required' });
     }
     
     if (!allowedRoles.includes(req.user.role)) {
-      console.log('❌ Access denied - role mismatch');
+      console.log('Access denied - role mismatch');
       console.log(`User has role '${req.user.role}', but needs one of:`, allowedRoles);
       
       return res.status(403).json({ 
@@ -73,7 +72,7 @@ exports.authorize = (roles) => {
       });
     }
     
-    console.log('✅ Authorization successful');
+    console.log('Authorization successful');
     next();
   };
 };

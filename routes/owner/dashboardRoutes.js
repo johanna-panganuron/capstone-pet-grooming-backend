@@ -9,49 +9,43 @@ router.use(verifyToken);
 router.use(verifyOwner);
 
 /**
- * @route   GET /api/owner/dashboard
- * @desc    Get dashboard overview statistics
- * @access  Owner only
+GET /api/owner/dashboard
+Get dashboard overview statistics
  */
 router.get('/', dashboardController.getDashboardOverview);
 
 /**
- * @route   GET /api/owner/dashboard/revenue-chart
- * @desc    Get revenue chart data for specified period
- * @access  Owner only
- * @query   days - Number of days (7, 30, 90)
+GET /api/owner/dashboard/revenue-chart
+Get revenue chart data for specified period
+days - Number of days (7, 30, 90)
  */
 router.get('/revenue-chart', dashboardController.getRevenueChart);
 
 /**
- * @route   GET /api/owner/dashboard/monthly-stats
- * @desc    Get monthly statistics for specific month/year
- * @access  Owner only
- * @query   year - Year (optional, defaults to current year)
- * @query   month - Month (optional, defaults to current month)
+GET /api/owner/dashboard/monthly-stats
+Get monthly statistics for specific month/year
+year - Year (optional, defaults to current year)
+month - Month (optional, defaults to current month)
  */
 router.get('/monthly-stats', dashboardController.getMonthlyStats);
 
 /**
- * @route   GET /api/owner/dashboard/top-groomers
- * @desc    Get top performing groomers
- * @access  Owner only
- * @query   limit - Number of groomers to return (default: 5)
- * @query   days - Period in days (default: 30)
+GET /api/owner/dashboard/top-groomers
+Get top performing groomers
+limit - Number of groomers to return (default: 5)
+days - Period in days (default: 30)
  */
 router.get('/top-groomers', dashboardController.getTopGroomers);
 
 /**
- * @route   GET /api/owner/dashboard/insights
- * @desc    Get business insights and recommendations
- * @access  Owner only
+GET /api/owner/dashboard/insights
+Get business insights and recommendations
  */
 router.get('/insights', dashboardController.getBusinessInsights);
 
 /**
- * @route   GET /api/owner/dashboard/real-time
- * @desc    Get real-time dashboard updates
- * @access  Owner only
+GET /api/owner/dashboard/real-time
+Get real-time dashboard updates
  */
 router.get('/real-time', dashboardController.getRealTimeUpdates);
 

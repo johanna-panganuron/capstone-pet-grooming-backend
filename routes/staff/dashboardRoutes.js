@@ -12,6 +12,6 @@ router.use(authorize(['staff', 'owner'])); // Allow both staff and owner roles
 router.get('/stats', DashboardStaffController.getDashboardStats);
 router.get('/today-schedule', DashboardStaffController.getTodaySchedule);
 router.get('/recent-activities', DashboardStaffController.getRecentActivities);
-router.get('/user-profile', DashboardStaffController.getUserProfile); // Add this line
+router.get('/user-profile', DashboardStaffController.getUserProfile);
 
 module.exports = router;

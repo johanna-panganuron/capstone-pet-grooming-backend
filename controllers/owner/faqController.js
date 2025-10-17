@@ -93,7 +93,6 @@ exports.updateFaq = async (req, res) => {
     });
   }
 };
-
 exports.deleteFaq = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,6 +100,13 @@ exports.deleteFaq = async (req, res) => {
     // Get FAQ details before deletion for logging
     const faq = await Faq.findById(id);
     
+    if (!faq) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'FAQ not found' 
+      });
+    }
+
     const deleted = await Faq.delete(id);
     
     if (!deleted) {
@@ -116,7 +122,7 @@ exports.deleteFaq = async (req, res) => {
       'faq_delete',
       'faq',
       `FAQ #${id}`,
-      `Deleted FAQ: ${faq ? faq.question.substring(0, 50) + '...' : 'FAQ deleted'}`,
+      `Deleted FAQ: ${faq.question.substring(0, 50)}${faq.question.length > 50 ? '...' : ''}`,
       req
     );
 

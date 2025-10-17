@@ -959,7 +959,7 @@ exports.getMyAppointments = async (req, res) => {
             
             const syncPromises = appointments.map(appointment => 
                 Appointment.syncPaymentStatusWithPayments(appointment.id).catch(error => {
-                    console.error(`❌ Failed to sync payment for appointment ${appointment.id}:`, error);
+                    console.error(`Failed to sync payment for appointment ${appointment.id}:`, error);
                     return null;
                 })
             );

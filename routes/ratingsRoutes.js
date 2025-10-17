@@ -1,8 +1,7 @@
 // routes\ratingsRoutes.js
-
 const express = require('express');
 const router = express.Router();
-const db = require('../models/db'); // Adjust path as needed
+const db = require('../models/db');
 
 /**
  * GET /api/ratings/public
@@ -29,8 +28,7 @@ router.get('/public', async (req, res) => {
     }
 
     // Combined query to get ratings from both tables
-   // Update the appointment ratings part
-const ratingsQuery = `
+    const ratingsQuery = `
 (
   -- Appointment ratings
   SELECT 
@@ -106,7 +104,7 @@ LIMIT ? OFFSET ?
     // Get services for each review
     const reviewsWithServices = await Promise.all(reviews.map(async (review) => {
       let services = [];
-      
+
       try {
         if (review.booking_type === 'appointment' && review.booking_id) {
           // Get appointment services
@@ -117,7 +115,7 @@ LIMIT ? OFFSET ?
             WHERE aps.appointment_id = ?
             ORDER BY gs.name
           `, [review.booking_id]);
-          
+
           services = appointmentServices.map(service => ({
             id: service.id,
             name: service.name,
@@ -132,7 +130,7 @@ LIMIT ? OFFSET ?
             WHERE wbs.walk_in_booking_id = ?
             ORDER BY gs.name
           `, [review.walk_in_booking_id]);
-          
+
           services = walkInServices.map(service => ({
             id: service.id,
             name: service.name,
@@ -140,8 +138,8 @@ LIMIT ? OFFSET ?
           }));
         }
       } catch (serviceError) {
-        console.error(`❌ Error fetching services for review ${review.id}:`, serviceError);
-        services = []; // Continue with empty services array
+        console.error(`Error fetching services for review ${review.id}:`, serviceError);
+        services = [];
       }
 
       return {
@@ -157,9 +155,9 @@ LIMIT ? OFFSET ?
       walk_in_booking_id: review.walk_in_booking_id,
       customer_id: review.customer_id,
       customer_name: review.customer_name,
-      customer_photo: review.customer_photo ? 
-        (review.customer_photo.startsWith('http') ? 
-          review.customer_photo : 
+      customer_photo: review.customer_photo ?
+        (review.customer_photo.startsWith('http') ?
+          review.customer_photo :
           `http://localhost:3000${review.customer_photo}`) : null,
       rating: review.rating,
       review: review.review,
@@ -170,18 +168,18 @@ LIMIT ? OFFSET ?
       service_name: review.service_name,
       services: review.services || [],
       pet_name: review.pet_name,
-      pet_breed: review.pet_breed,   // 👈 ADD THIS
-      pet_photo: review.pet_photo ? 
-        (review.pet_photo.startsWith('http') ? 
-          review.pet_photo : 
+      pet_breed: review.pet_breed,
+      pet_photo: review.pet_photo ?
+        (review.pet_photo.startsWith('http') ?
+          review.pet_photo :
           `http://localhost:3000${review.pet_photo}`) : null,
       service_date: review.service_date,
       booking_type: review.booking_type,
       created_at: review.created_at
     }));
-    
 
-    // Get overall rating summary (unchanged)
+
+    // Get overall rating summary 
     const summaryQuery = `
       SELECT 
         AVG(combined_rating) as average_rating,
@@ -196,7 +194,7 @@ LIMIT ? OFFSET ?
     const [summaryRows] = await db.execute(summaryQuery);
     const summary = summaryRows[0] || { average_rating: 0, total_ratings: 0 };
 
-    // Get rating distribution (unchanged)
+    // Get rating distribution 
     const distributionQuery = `
       SELECT 
         combined_rating as rating,
@@ -211,10 +209,10 @@ LIMIT ? OFFSET ?
     `;
 
     const [distributionRows] = await db.execute(distributionQuery);
-    
+
     // Initialize distribution with zeros
     const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    
+
     // Fill in actual counts
     distributionRows.forEach(row => {
       if (row.rating >= 1 && row.rating <= 5) {
@@ -222,7 +220,7 @@ LIMIT ? OFFSET ?
       }
     });
 
-    console.log(`✅ Fetched ${formattedReviews.length} ratings with services for page ${page}`);
+    console.log(`Fetched ${formattedReviews.length} ratings with services for page ${page}`);
 
     res.json({
       success: true,
@@ -244,7 +242,7 @@ LIMIT ? OFFSET ?
     });
 
   } catch (error) {
-    console.error('❌ Error fetching public ratings:', error);
+    console.error('Error fetching public ratings:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch ratings',
@@ -259,7 +257,7 @@ LIMIT ? OFFSET ?
  */
 router.get('/summary', async (req, res) => {
   try {
-    console.log('🔄 Fetching rating summary...');
+    console.log('Fetching rating summary...');
 
     // Get comprehensive summary including both appointment and walk-in ratings
     const summaryQuery = `
@@ -308,7 +306,7 @@ router.get('/summary', async (req, res) => {
     `;
 
     const [distributionRows] = await db.execute(distributionQuery);
-    
+
     const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     distributionRows.forEach(row => {
       if (row.rating >= 1 && row.rating <= 5) {
@@ -329,7 +327,7 @@ router.get('/summary', async (req, res) => {
     const [recentCountRows] = await db.execute(recentCountQuery);
     const recentCount = recentCountRows[0]?.recent_count || 0;
 
-    console.log('✅ Rating summary fetched successfully');
+    console.log('Rating summary fetched successfully');
 
     res.json({
       success: true,
@@ -346,7 +344,7 @@ router.get('/summary', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching rating summary:', error);
+    console.error('Error fetching rating summary:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch rating summary',
@@ -362,7 +360,7 @@ router.get('/summary', async (req, res) => {
 router.get('/recent', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 5;
-    console.log(`🔄 Fetching ${limit} recent ratings...`);
+    console.log(`Fetching ${limit} recent ratings...`);
 
     const query = `
     (
@@ -421,7 +419,7 @@ router.get('/recent', async (req, res) => {
       created_at: rating.created_at
     }));
 
-    console.log(`✅ Fetched ${recentRatings.length} recent ratings`);
+    console.log(`Fetched ${recentRatings.length} recent ratings`);
 
     res.json({
       success: true,
@@ -430,7 +428,7 @@ router.get('/recent', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching recent ratings:', error);
+    console.error('Error fetching recent ratings:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch recent ratings',

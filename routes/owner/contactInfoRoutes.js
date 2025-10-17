@@ -1,4 +1,3 @@
-// ==================== OWNER ROUTES ====================
 // routes/owner/contactInfoRoutes.js
 const express = require('express');
 const router = express.Router();

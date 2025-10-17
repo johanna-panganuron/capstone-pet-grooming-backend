@@ -7,27 +7,27 @@ const { verifyToken, authorize } = require('../../middleware/authMiddleware');
 // Protect all routes — staff only
 router.use(verifyToken, authorize('staff'));
 
-// ✅ Get customer statistics (MUST be before /:id routes)
+// Get customer statistics (MUST be before /:id routes)
 router.get('/stats', customerController.getCustomerStats);
 
-// ✅ Get all customers with pagination and filtering
+// Get all customers with pagination and filtering
 router.get('/', customerController.getAllCustomers);
 
-// ✅ Add new walk-in customer (WITH FILE UPLOAD MIDDLEWARE)
+// Add new walk-in customer (WITH FILE UPLOAD MIDDLEWARE)
 router.post('/', 
-  customerController.uploadProfilePhoto, // Add multer middleware here
+  customerController.uploadProfilePhoto,
   customerController.addCustomer
 );
 
-// ✅ Get specific customer details
+// Get specific customer details
 router.get('/:id/details', customerController.getCustomerDetails);
 
-// ✅ Get single customer by ID
+// Get single customer by ID
 router.get('/:id', customerController.getCustomerById);
 
-// ✅ Update customer (WITH FILE UPLOAD MIDDLEWARE)
+// Update customer (WITH FILE UPLOAD MIDDLEWARE)
 router.put('/:id', 
-  customerController.uploadProfilePhoto, // Add multer middleware here
+  customerController.uploadProfilePhoto,
   customerController.updateCustomer
 );
 

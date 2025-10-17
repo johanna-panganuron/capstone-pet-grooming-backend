@@ -7,4 +7,3 @@ const contactInfoController = require('../controllers/contactInfoController');
 router.get('/', contactInfoController.getContactInfo);
 
 module.exports = router;
-

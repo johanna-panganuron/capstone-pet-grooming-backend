@@ -47,16 +47,16 @@ router.get('/stats', petRecordsController.getPetRecordsStats);
 // POST route for creating pets
 router.post('/pets', upload.single('photo'), petRecordsController.createPet);
 
-// ✅ GET /api/staff/pet-records - Get all pet records (with pagination)
+// GET /api/staff/pet-records - Get all pet records (with pagination)
 router.get('/', petRecordsController.getAllPetRecords);
 
-// ✅ PUT /api/staff/pet-records/:id - Update specific pet record
+// PUT /api/staff/pet-records/:id - Update specific pet record
 router.put('/:id', upload.single('photo'), petRecordsController.updatePet);
 
-// ✅ DELETE /api/staff/pet-records/:id - Delete specific pet record
+// DELETE /api/staff/pet-records/:id - Delete specific pet record
 router.delete('/:id', petRecordsController.deletePet);
 
-// ✅ GET /api/staff/pet-records/:id - Get specific pet record by ID (MUST be last)
+// GET /api/staff/pet-records/:id - Get specific pet record by ID (MUST be last)
 router.get('/:id', petRecordsController.getPetRecordById);
 
 module.exports = router;

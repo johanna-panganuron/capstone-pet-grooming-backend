@@ -1,6 +1,7 @@
 // controllers/owner/appointmentController.js -
 const Appointment = require('../../models/Appointment');
 const GroomingService = require('../../models/GroomingService');
+const Rating = require('../../models/Rating');
 const User = require('../../models/User');
 const db = require('../../models/db');
 const Payment = require('../../models/Payment');
@@ -556,7 +557,7 @@ const [insert] = await db.execute(
 exports.endAppointmentSession = async (req, res) => {
     try {
         const { id } = req.params;
-        const { send_notification } = req.body; // Add this parameter
+        const { send_notification } = req.body;
 
         const [sessions] = await db.execute(
             `SELECT * FROM appointment_sessions WHERE appointment_id = ? AND status = 'active' ORDER BY start_time DESC LIMIT 1`,
@@ -567,8 +568,6 @@ exports.endAppointmentSession = async (req, res) => {
         }
 
         const session = sessions[0];
-
-        // Get appointment details for notification
         const appointment = await Appointment.findById(id);
 
         // Compute duration in minutes SQL-side
@@ -593,7 +592,16 @@ exports.endAppointmentSession = async (req, res) => {
             actual_time: now.toTimeString().split(' ')[0]
         });
 
-        // ADD THIS: Send notification when session is completed
+        // ===== 🆕 AUTO-CREATE DEFAULT RATING =====
+        try {
+            await Rating.autoCreateRatingForAppointment(id);
+            console.log(`✅ Default rating auto-created for appointment ${id}`);
+        } catch (ratingError) {
+            console.warn(`⚠️ Could not auto-create rating for appointment ${id}:`, ratingError.message);
+            // Don't fail the entire operation if rating creation fails
+        }
+
+        // Send notification when session is completed
         if (appointment.owner_id && send_notification) {
             try {
                 const updatedAppointment = await Appointment.findByIdWithPetDetails(id);
@@ -637,7 +645,8 @@ exports.endAppointmentSession = async (req, res) => {
                 session_id: session.id,
                 durationMinutes
             },
-            notification_sent: !!(appointment.owner_id && send_notification)
+            notification_sent: !!(appointment.owner_id && send_notification),
+            rating_auto_created: true
         });
     } catch (error) {
         console.error('Error ending appointment session:', error);

@@ -1,4 +1,4 @@
-// Create a new file: routes/staff/profileRoutes.js
+// routes/staff/profileRoutes.js
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../../middleware/authMiddleware');

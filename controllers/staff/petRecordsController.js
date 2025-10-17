@@ -597,15 +597,7 @@ exports.getAllPetRecords = async (req, res) => {
     const [countResult] = await db.query(countQuery);
     const totalRecords = countResult[0].total;
 
-    // Log the view activity
-    await ActivityLogger.log(
-      req.user,
-      'VIEWED',
-      'PET_RECORDS',
-      'All Pet Records Dashboard',
-      `Viewed page ${page} of pet records | Sort: ${sortField} ${order} | Total records: ${totalRecords}`,
-      req
-    );
+   
 
     // Format the response with better structure
     const petRecords = rows.map(record => ({

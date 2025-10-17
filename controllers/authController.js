@@ -6,7 +6,9 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const crypto = require('crypto');
 const { sendVerificationEmail, sendResetPasswordEmail } = require('../utils/email');
-const axios = require('axios'); // Ensure axios is required if used in googleAuth
+const axios = require('axios'); 
+const path = require('path');
+const fs = require('fs');
 
 // LOGIN with JWT 
 exports.loginUser = async (req, res) => {
@@ -16,7 +18,6 @@ exports.loginUser = async (req, res) => {
   console.log('Received login attempt for email:', email);
 
   try {
-      // 1. Query database for user - INCLUDE staff_type in SELECT
       console.log(`Attempting to find user with email: ${email}`);
       const [rows] = await db.query(
           'SELECT id, email, password, role, name, contact_number, profile_photo_url, staff_type, created_at FROM users WHERE email = ?', 
@@ -38,7 +39,7 @@ exports.loginUser = async (req, res) => {
           staff_type: user.staff_type 
       });
 
-      // 2. Compare passwords
+      // Compare passwords
       console.log('Comparing provided password with hashed password from DB...');
       const isPasswordMatch = await bcrypt.compare(password, user.password);
       console.log('Password comparison result (isPasswordMatch):', isPasswordMatch);
@@ -48,7 +49,7 @@ exports.loginUser = async (req, res) => {
           return res.status(401).json({ message: 'Incorrect password' });
       }
 
-      // 3. Generate JWT token
+      // Generate JWT token
       const token = jwt.sign(
           { 
               id: user.id, 
@@ -68,7 +69,7 @@ exports.loginUser = async (req, res) => {
           staff_type: user.staff_type
       });
 
-      // 4. Send success response - INCLUDE ALL FIELDS
+      // Send success response - INCLUDE ALL FIELDS
       console.log('Login Successful! Sending response to frontend.');
       res.status(200).json({
           message: 'Login successful',
@@ -289,15 +290,52 @@ exports.refreshToken = async (req, res) => {
   }
 };
 
-// Updated googleAuth function - INCLUDE staff_type (though Google users are typically pet_owners)
+// Helper function to download and save Gmail photo locally
+async function saveGmailPhoto(userId, photoUrl) {
+  try {
+    if (!photoUrl) {
+      console.log('No photoUrl provided');
+      return null;
+    }
+
+    console.log('Downloading photo from:', photoUrl);
+    const response = await axios.get(photoUrl, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(response.data, 'binary');
+    console.log('Photo downloaded, size:', buffer.length, 'bytes');
+
+    const uploadDir = path.join(__dirname, '../uploads/profile_photos');
+    console.log('Upload directory path:', uploadDir);
+    
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+      console.log('Created upload directory');
+    }
+
+    const filename = `user_${userId}_${Date.now()}.jpg`;
+    const filepath = path.join(uploadDir, filename);
+    console.log('Saving to:', filepath);
+    
+    fs.writeFileSync(filepath, buffer);
+    console.log('File saved successfully');
+
+    const localUrl = `/uploads/profile_photos/${filename}`;
+    console.log('Local photo URL:', localUrl);
+    
+    return localUrl;
+  } catch (error) {
+    console.error('Error saving Gmail photo:', error.message);
+    console.error('Error details:', error);
+    return '/default-profile.png';
+  }
+}
+// Replace the googleAuth function - this version ALWAYS saves the photo locally
+
 exports.googleAuth = async (req, res) => {
   try {
     const { access_token, is_signup } = req.body;
     
     console.log('Google auth request:', { is_signup, has_token: !!access_token });
     
-    // 1. Get user info from Google using access token
-    const axios = require('axios');
     const googleResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: {
         'Authorization': `Bearer ${access_token}`
@@ -311,20 +349,21 @@ exports.googleAuth = async (req, res) => {
       name: googleUser.name 
     });
 
-    // 2. Check if user exists in database 
     const [users] = await db.query('SELECT * FROM users WHERE email = ?', [googleUser.email]);
     let user = users[0];
     let isNewUser = false;
 
     if (!user) {
-      // User doesn't exist
       if (is_signup) {
-        // Create new user for signup - Google users are pet_owners, so staff_type is NULL
         console.log('Creating new Google user...');
+        
+        const savedPhotoPath = await saveGmailPhoto(null, googleUser.picture);
+        console.log('Photo saved:', savedPhotoPath);
+        
         const [result] = await db.query(
           `INSERT INTO users (name, email, profile_photo_url, role, contact_number, oauth_provider, oauth_id, staff_type) 
            VALUES (?, ?, ?, 'pet_owner', NULL, 'google', ?, NULL)`,
-          [googleUser.name, googleUser.email, googleUser.picture, googleUser.id]
+          [googleUser.name, googleUser.email, savedPhotoPath, googleUser.id]
         );
         
         const [newUser] = await db.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
@@ -333,22 +372,24 @@ exports.googleAuth = async (req, res) => {
         
         console.log('New Google user created:', { id: user.id, email: user.email });
       } else {
-        // Login attempt but user doesn't exist
         return res.status(404).json({ 
           success: false,
           message: 'No account found with this Google email. Please sign up first.' 
         });
       }
     } else {
-      // User exists - UPDATE to include OAuth info if not already set
-      if (!user.oauth_provider && !user.oauth_id) {
-        await db.query(
-          'UPDATE users SET oauth_provider = ?, oauth_id = ?, profile_photo_url = ? WHERE id = ?',
-          ['google', googleUser.id, googleUser.picture, user.id]
-        );
-        user.oauth_provider = 'google';
-        user.oauth_id = googleUser.id;
-      }
+      // ALWAYS save the photo on login (don't check oauth_provider)
+      const savedPhotoPath = await saveGmailPhoto(user.id, googleUser.picture);
+      console.log('Photo saved for existing user:', savedPhotoPath);
+      
+      await db.query(
+        'UPDATE users SET oauth_provider = ?, oauth_id = ?, profile_photo_url = ? WHERE id = ?',
+        ['google', googleUser.id, savedPhotoPath, user.id]
+      );
+      
+      user.oauth_provider = 'google';
+      user.oauth_id = googleUser.id;
+      user.profile_photo_url = savedPhotoPath;
       
       if (is_signup) {
         return res.status(400).json({ 
@@ -356,10 +397,9 @@ exports.googleAuth = async (req, res) => {
           message: 'An account with this email already exists. Please login instead.' 
         });
       }
-      console.log('Existing Google user logging in:', { id: user.id, email: user.email });
+      console.log('Existing Google user logged in:', { id: user.id, email: user.email });
     }
 
-    // 3. Generate JWT token
     const token = jwt.sign(
       {
         id: user.id,
@@ -372,10 +412,8 @@ exports.googleAuth = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
 
-    // 4. Determine if profile completion is needed
     const needsProfileCompletion = !user.contact_number || user.contact_number.trim() === '';
 
-    // 5. Send success response
     res.json({
       success: true,
       token,
@@ -394,7 +432,6 @@ exports.googleAuth = async (req, res) => {
   } catch (err) {
     console.error('Google auth error:', err);
     
-    // Handle specific error types
     if (err.response && err.response.status === 401) {
       return res.status(401).json({ 
         success: false,

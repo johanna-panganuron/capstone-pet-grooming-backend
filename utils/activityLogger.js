@@ -1,7 +1,7 @@
-// utils/activityLogger.js
+// utils\activityLogger.js
 const fs = require('fs').promises;
 const path = require('path');
-const db = require('../models/db'); // Add this import
+const db = require('../models/db');
 
 class ActivityLogger {
   static async log(user, action, target_type, target_name, details, req = null) {
@@ -16,8 +16,7 @@ class ActivityLogger {
       target_type,
       target_name,
       details,
-      ip_address: req ? (req.ip || req.connection.remoteAddress) : null,
-      user_agent: req ? req.get('User-Agent') : null
+      created_at: now
     };
 
     // Format console log with proper Philippine time
@@ -34,13 +33,13 @@ class ActivityLogger {
 
     console.log(`[ACTIVITY] ${readableTime} - ${user.name} (${user.role}${user.staff_type ? ` - ${user.staff_type}` : ''}) ${action}: ${target_name}`);
 
-    // Save to database
+    // Save to database (updated query without ip_address and user_agent)
     try {
       await db.execute(`
         INSERT INTO activity_logs (
           user_id, user_name, user_role, staff_type, action, 
-          target_type, target_name, details, ip_address, user_agent, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+          target_type, target_name, details, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
       `, [
         activity.user_id,
         activity.user_name,
@@ -49,9 +48,7 @@ class ActivityLogger {
         activity.action,
         activity.target_type,
         activity.target_name,
-        activity.details,
-        activity.ip_address,
-        activity.user_agent
+        activity.details
       ]);
     } catch (dbError) {
       console.error('Failed to save activity to database:', dbError);

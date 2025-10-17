@@ -1,4 +1,4 @@
-// routes/owner/petRecordsRoutes.js - CORRECTED VERSION
+// routes/owner/petRecordsRoutes.js
 const express = require('express');
 const router = express.Router();
 const petRecordsController = require('../../controllers/owner/petRecordsController');
@@ -38,8 +38,6 @@ const upload = multer({
 
 // Apply authentication to all routes
 router.use(verifyToken);
-
-// SPECIFIC ROUTES FIRST (must come before generic routes)
 
 // Pet CRUD operations - Allow both owners and pet_owners
 router.post('/pets', 

@@ -51,7 +51,7 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
   }
 
   if (!paymentDetails.userName) {
-    console.warn('⚠️ User name is missing, using default');
+    console.warn('User name is missing, using default');
     paymentDetails.userName = 'Valued Customer';
   }
   
@@ -67,9 +67,9 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
     petName,
     serviceName,
     serviceCategory,
-    additionalServices = [], // ADD THIS
-    basePrice = 0,           // ADD THIS
-    mattedCoatFee = 0        // ADD THIS
+    additionalServices = [], 
+    basePrice = 0,           
+    mattedCoatFee = 0        
   } = paymentDetails;
 
   const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`;
@@ -109,7 +109,7 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
   // CREATE PAYMENT BREAKDOWN HTML
   const paymentBreakdownHtml = `
     <div class="info-card">
-      <h3 style="margin-top: 0; color: #007dff;">💰 Payment Breakdown</h3>
+      <h3 style="margin-top: 0; color: #007dff;">Payment Breakdown</h3>
       <div class="info-row">
         <span class="info-label">Primary Service (${serviceName}):</span>
         <span class="info-value">${formatCurrency(basePrice)}</span>
@@ -131,7 +131,7 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
   const mailOptions = {
     from: `"Mimi's Pet Grooming" <${process.env.GMAIL_USER}>`,
     to: userEmail,
-    subject: '✅ Payment Confirmed - Your Pet\'s Grooming Appointment',
+    subject: 'Payment Confirmed - Your Pet\'s Grooming Appointment',
     html: `
       <!DOCTYPE html>
       <html>
@@ -276,7 +276,7 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
       <body>
         <div class="container">
           <div class="header">
-            <div class="success-icon">✅</div>
+            <div class="success-icon"></div>
             <h1>Payment Confirmed!</h1>
             <p>Your appointment is all set</p>
           </div>
@@ -293,7 +293,7 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
             
             <!-- Payment Details -->
             <div class="info-card">
-              <h3 style="margin-top: 0; color: #007dff;">💳 Payment Details</h3>
+              <h3 style="margin-top: 0; color: #007dff;">Payment Details</h3>
               <div class="info-row">
                 <span class="info-label">Payment Method:</span>
                 <span class="info-value">GCash</span>
@@ -347,7 +347,7 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
             
             <!-- Next Steps -->
             <div class="next-steps">
-              <h3>📝 What's Next?</h3>
+              <h3>What's Next?</h3>
               <ul>
                 <li><strong>Arrive 10 minutes early</strong> to complete any paperwork</li>
                 <li><strong>Bring ${petName}</strong> in a comfortable carrier or on a leash</li>
@@ -366,9 +366,9 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
           <div class="footer">
             <p><strong>Mimi's Pet Grooming</strong></p>
             <div class="contact-info">
-              <p>📧 ${process.env.GMAIL_USER}</p>
-              <p>📱 Contact us for any questions</p>
-              <p>🕒 Mon-Sat: 8:00 AM - 6:00 PM</p>
+              <p>${process.env.GMAIL_USER}</p>
+              <p>Contact us for any questions</p>
+              <p>Mon-Sat: 8:00 AM - 6:00 PM</p>
             </div>
             <p style="margin-top: 15px; font-size: 12px;">
               This is an automated confirmation email. Please keep this for your records.
@@ -381,7 +381,7 @@ exports.sendPaymentConfirmationEmail = async (paymentDetails) => {
   };
 
   await transporter.sendMail(mailOptions);
-  console.log(`📧 Payment confirmation email sent to ${userEmail}`);
+  console.log(`Payment confirmation email sent to ${userEmail}`);
 };
 
 // NEW: Admin notification email for new payment
@@ -407,7 +407,7 @@ exports.sendAdminPaymentNotification = async (paymentDetails) => {
   const mailOptions = {
     from: `"Mimi's Pet Grooming System" <${process.env.GMAIL_USER}>`,
     to: adminEmail,
-    subject: `💰 New Payment Received - ${formatCurrency(amount)} from ${userName}`,
+    subject: `New Payment Received - ${formatCurrency(amount)} from ${userName}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -427,7 +427,7 @@ exports.sendAdminPaymentNotification = async (paymentDetails) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>💰 Payment Received</h1>
+            <h1>Payment Received</h1>
             <p>New payment confirmation</p>
           </div>
           
@@ -493,7 +493,7 @@ exports.sendAdminPaymentNotification = async (paymentDetails) => {
   };
 
   await transporter.sendMail(mailOptions);
-  console.log(`📧 Admin payment notification sent for payment ${paymentId}`);
+  console.log(`Admin payment notification sent for payment ${paymentId}`);
 };
 
 // NEW: Payment failed notification
@@ -504,7 +504,7 @@ exports.sendPaymentFailedEmail = async (paymentDetails) => {
   const mailOptions = {
     from: `"Mimi's Pet Grooming" <${process.env.GMAIL_USER}>`,
     to: userEmail,
-    subject: '❌ Payment Issue - Action Required',
+    subject: 'Payment Issue - Action Required',
     html: `
       <!DOCTYPE html>
       <html>
@@ -521,7 +521,7 @@ exports.sendPaymentFailedEmail = async (paymentDetails) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>❌ Payment Issue</h1>
+            <h1>Payment Issue</h1>
             <p>We couldn't process your payment</p>
           </div>
           
@@ -558,5 +558,5 @@ exports.sendPaymentFailedEmail = async (paymentDetails) => {
   };
 
   await transporter.sendMail(mailOptions);
-  console.log(`📧 Payment failed notification sent to ${userEmail}`);
+  console.log(`Payment failed notification sent to ${userEmail}`);
 };

@@ -33,13 +33,13 @@ function initSocket(server) {
 
   // Connection handler
   io.on('connection', (socket) => {
-    console.log('🔌 User connected:', socket.userId);
+    console.log('User connected:', socket.userId);
     
     // Join user to their personal room
     socket.join(`user-${socket.userId}`);
     
     socket.on('disconnect', () => {
-      console.log('🔌 User disconnected:', socket.userId);
+      console.log('User disconnected:', socket.userId);
     });
   });
 
@@ -47,7 +47,6 @@ function initSocket(server) {
 }
 
 // Send notifications to specific users
-// Update your socketServer.js
 function sendNotificationToUser(userId, notification) {
   if (!io) {
     console.error('Socket.io not initialized');
@@ -66,10 +65,10 @@ function sendNotificationToUser(userId, notification) {
       notification,
       timestamp: new Date()
     });
-    console.log(`✅ Notification sent to user ${userId} in room ${userRoom}`);
+    console.log(`Notification sent to user ${userId} in room ${userRoom}`);
     return true;
   } else {
-    console.log(`❌ No active connections in room ${userRoom}`);
+    console.log(`No active connections in room ${userRoom}`);
     return false;
   }
 }

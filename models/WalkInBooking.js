@@ -2,7 +2,6 @@
 const db = require('./db');
 
 class WalkInBooking {
-  // In models/WalkInBooking.js
 static async findById(bookingId) {
   return await this.getWalkInBookingByIdWithServices(bookingId);
 }

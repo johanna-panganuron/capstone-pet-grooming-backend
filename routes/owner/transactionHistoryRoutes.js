@@ -1,5 +1,4 @@
 // routes/owner/transactionHistoryRoutes.js
-
 const express = require('express');
 const router = express.Router();
 const { verifyToken, verifyOwner } = require('../../middleware/authMiddleware');

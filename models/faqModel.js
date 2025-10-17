@@ -7,6 +7,11 @@ class Faq {
     return rows;
   }
 
+  static async findById(id) {
+    const [rows] = await db.query('SELECT * FROM faqs WHERE id = ?', [id]);
+    return rows[0] || null;
+  }
+
   static async create(question, answer) {
     const [result] = await db.query(
       'INSERT INTO faqs (question, answer) VALUES (?, ?)',

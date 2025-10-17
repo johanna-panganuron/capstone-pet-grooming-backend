@@ -18,15 +18,13 @@ const db = require('./models/db');
 const GroomingService = require('./models/GroomingService');
 
 // Create upload directories if missing
-['uploads', 'uploads/profiles', 'uploads/gallery', 'uploads/pets', 'uploads/services'].forEach(dir => {
+['uploads', 'uploads/profiles', 'uploads/gallery', 'uploads/pets', 'uploads/services', 'uploads/profile_photos'].forEach(dir => {
     const fullPath = path.join(__dirname, dir);
     if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
 });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-console.log('✅ Environment loaded');
 
 // Middleware
 app.use(cors({
@@ -38,6 +36,7 @@ app.use(cors({
 app.use(express.json());
 app.use((req, res, next) => { req.db = db; next(); });
 
+// Images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Public / Pet Owner routes
@@ -169,6 +168,6 @@ app.set('io', io);
 
 // Start server
 server.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`🔌 Socket.io server initialized`);
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Socket.io server initialized`);
 });

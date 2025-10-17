@@ -7,10 +7,10 @@
   const multer = require('multer');
   const path = require('path');
 
-  // ✅ FIXED: Configure multer to save to 'uploads/gallery' (not 'public/uploads/gallery')
+  // Configure multer to save to 'uploads/gallery'
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, 'uploads/gallery'); // ✅ CHANGED: Remove 'public/' prefix
+      cb(null, 'uploads/gallery'); 
     },
     filename: function (req, file, cb) {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

@@ -321,10 +321,10 @@ class WalkInController {
       if (req.user && booking) {
         await ActivityLogger.log(
           req.user,
-          'created',
-          'walk_in_booking',
-          `Booking #${bookingId} - Queue #${queue_number}`,
-          `Pet: ${booking.pet_name}, Total: ₱${total_amount}, Services: ${service_ids.length}`,
+          'walk_in_create', // ✅ CHANGED from 'created'
+          'walk_in',
+          `Queue #${queue_number} - ${booking.pet_name}`,
+          `Created walk-in for ${booking.owner_name}'s ${booking.pet_name} - ${booking.services?.map(s => s.name).join(', ')}. Amount: ₱${total_amount}`,
           req
         );
       }
@@ -501,8 +501,8 @@ class WalkInController {
       if (req.user) {
         await ActivityLogger.log(
           req.user,
-          'rescheduled',
-          'walk_in_booking',
+          'walk_in_update', // ✅ CHANGED from 'rescheduled'
+          'walk_in',
           `Booking #${bookingId}`,
           `Time slot changed to ${new_time_slot}. Reason: ${reschedule_reason.trim()}`,
           req
@@ -608,37 +608,60 @@ class WalkInController {
     }
   }
 
-  // Update booking status
-  static async updateBookingStatus(req, res) {
-    try {
-      console.log('=== UPDATE BOOKING STATUS ===');
-      console.log('Booking ID:', req.params.bookingId);
-      console.log('New Status:', req.body.status);
-      
-      const { bookingId } = req.params;
-      const { status } = req.body;
-      
-      const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
-      if (!status || !validStatuses.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid status. Valid statuses: pending, in_progress, completed, cancelled'
-        });
-      }
-      
-      const updated = await WalkInBooking.updateBookingStatus(bookingId, status);
-      
-      if (!updated) {
-        return res.status(404).json({
-          success: false,
-          message: 'Booking not found'
-        });
-      }
-      
-      console.log(`✅ Booking ${bookingId} status updated to: ${status}`);
+  // ✅ Update booking status (full code)
+static async updateBookingStatus(req, res) {
+  try {
+    console.log('=== UPDATE BOOKING STATUS ===');
+    console.log('Booking ID:', req.params.bookingId);
+    console.log('New Status:', req.body.status);
 
-      // Log activity for status update
-      if (req.user) {
+    const { bookingId } = req.params;
+    const { status } = req.body;
+
+    // ✅ Validate status
+    const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Invalid status. Valid statuses: pending, in_progress, completed, cancelled'
+      });
+    }
+
+    // ✅ Update booking status in DB
+    const updated = await WalkInBooking.updateBookingStatus(bookingId, status);
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    console.log(`✅ Booking ${bookingId} status updated to: ${status}`);
+
+    // ✅ Log activity for specific status
+    if (req.user) {
+      if (status === 'completed') {
+        await ActivityLogger.log(
+          req.user,
+          'walk_in_complete', // specific action
+          'walk_in',
+          `Booking #${bookingId}`,
+          `Marked as completed`,
+          req
+        );
+      } else if (status === 'cancelled') {
+        await ActivityLogger.log(
+          req.user,
+          'walk_in_cancel', // specific action
+          'walk_in',
+          `Booking #${bookingId}`,
+          `Cancelled booking`,
+          req
+        );
+      } else {
+        // For all other status updates
         await ActivityLogger.log(
           req.user,
           'updated',
@@ -648,21 +671,24 @@ class WalkInController {
           req
         );
       }
-      
-      res.json({
-        success: true,
-        message: `Booking status updated to ${status}`,
-        data: { booking_id: bookingId, new_status: status }
-      });
-    } catch (error) {
-      console.error('❌ Error updating booking status:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update booking status',
-        error: error.message
-      });
     }
+
+    // ✅ Send response
+    res.json({
+      success: true,
+      message: `Booking status updated to ${status}`,
+      data: { booking_id: bookingId, new_status: status }
+    });
+  } catch (error) {
+    console.error('❌ Error updating booking status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update booking status',
+      error: error.message
+    });
   }
+}
+
 
   // Generate receipt
   static async generateReceipt(req, res) {
@@ -1360,8 +1386,8 @@ class WalkInController {
       if (req.user) {
         await ActivityLogger.log(
           req.user,
-          'cancelled',
-          'walk_in_booking',
+          'walk_in_cancel', // ✅ CHANGED from 'cancelled'
+          'walk_in',
           `Booking #${bookingId}`,
           `Cancelled by ${cancelled_by}. Reason: ${cancellation_reason.trim()}. Refund eligible: ${refund_eligible}`,
           req
@@ -1396,9 +1422,9 @@ class WalkInController {
             }
           });
 
-          console.log('📨 Walk-in cancellation notification sent to user:', booking.owner_id);
+          console.log('Walk-in cancellation notification sent to user:', booking.owner_id);
         } catch (notificationError) {
-          console.error('❌ Error sending walk-in cancellation notification:', notificationError);
+          console.error('Error sending walk-in cancellation notification:', notificationError);
           // Don't fail the whole request if notification fails
         }
       }

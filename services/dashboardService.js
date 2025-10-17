@@ -2,12 +2,12 @@
 const DashboardModel = require('../models/DashboardOwner');
 
 class DashboardService {
-  /**
-   * Get comprehensive dashboard statistics
-   */
+  
+   // Get comprehensive dashboard statistics
+  
   async getDashboardStats(userId) {
     try {
-      console.log('📊 Fetching dashboard statistics for user ID:', userId);
+      console.log('Fetching dashboard statistics for user ID:', userId);
       
       // Get user name first
       let userName = 'Owner'; // Default fallback
